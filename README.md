@@ -28,3 +28,5 @@ A user should only be able to add their own photos and albums. The user can only
 * All passwords must be salted and hashed.
 * All received data must be sanitized and validated.
 * All endpoints for photos and albums must require authentication.
+
+### Gonna be alot of commits in a short amount of time.
