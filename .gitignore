@@ -2,5 +2,6 @@
 /**/node_modules/
 *-nogit
 /**/*.env
+/**/*.editorgonfig
 
 /03-db/uploads/
