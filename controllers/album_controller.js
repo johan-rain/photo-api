@@ -1,46 +1,58 @@
-/**
- * Example Controller
- */
-
 const debug = require('debug')('books:example_controller');
 const { matchedData, validationResult } = require('express-validator');
 const models = require('../models');
 
 /**
- * Get all resources
- *
- * GET /
+ * Get albums
  */
-const index = async (req, res) => {
-	const examples = await models.Example.fetchAll();
+ const getAlbums = async (req, res) => {
+	const user = await models.User.fetchById(req.user.user_id, {
+		withRelated: ['albums'],
+	});
+
+	res.status(200).send({
+		status: 'success',
+		data: {
+			album: user.related('albums'),
+		},
+	});
+};
+
+/**
+ * Get specific album
+ */
+ const showAlbum = async (req, res) => {
+	const user = await models.User.fetchById(req.user.user_id, {
+		withRelated: ['albums'],
+	});
+
+	const userAlbums = user.related('albums');
+
+	const album = userAlbums.find(album => album.id == req.params.albumId);
+
+	if (!album) {
+		return res.status(404).send({
+			status: 'fail',
+			message: 'Album is not here',
+		});
+	}
+
+	const albumId = await models.Album.fetchById(req.params.albumId, {
+		withRelated: ['photos'],
+	});
 
 	res.send({
 		status: 'success',
-		data: examples,
+		data: {
+			album: albumId,
+		},
 	});
-}
+};
 
 /**
- * Get a specific resource
- *
- * GET /:exampleId
+ * Add a new album
  */
-const show = async (req, res) => {
-	const example = await new models.Example({ id: req.params.exampleId })
-		.fetch();
-
-	res.send({
-		status: 'success',
-		data: example,
-	});
-}
-
-/**
- * Store a new resource
- *
- * POST /
- */
-const store = async (req, res) => {
+const newAlbum = async (req, res) => {
 	// check for any validation errors
 	const errors = validationResult(req);
 	if (!errors.isEmpty()) {
