@@ -1,135 +1,138 @@
-/**
- * Example Controller
+ const bcrypt = require('bcrypt');
+ const debug = require('debug')('photos:auth_controller');
+ const { matchedData, validationResult } = require('express-validator');
+ const models = require('../models');
+ const jwt = require('jsonwebtoken');
+ 
+
+ /**
+ * Login
  */
+ 
+ const login = async (req, res) => {
+ 
+	const { email, password } = req.body;
 
-const debug = require('debug')('books:example_controller');
-const { matchedData, validationResult } = require('express-validator');
-const models = require('../models');
-
-/**
- * Get all resources
- *
- * GET /
- */
-const index = async (req, res) => {
-	const examples = await models.Example.fetchAll();
-
-	res.send({
-		status: 'success',
-		data: examples,
-	});
-}
-
-/**
- * Get a specific resource
- *
- * GET /:exampleId
- */
-const show = async (req, res) => {
-	const example = await new models.Example({ id: req.params.exampleId })
-		.fetch();
-
-	res.send({
-		status: 'success',
-		data: example,
-	});
-}
-
-/**
- * Store a new resource
- *
- * POST /
- */
-const store = async (req, res) => {
-	// check for any validation errors
-	const errors = validationResult(req);
-	if (!errors.isEmpty()) {
-		return res.status(422).send({ status: 'fail', data: errors.array() });
-	}
-
-	// get only the validated data from the request
-	const validData = matchedData(req);
-
-	try {
-		const example = await new models.Example(validData).save();
-		debug("Created new example successfully: %O", example);
-
-		res.send({
-			status: 'success',
-			data: example,
-		});
-
-	} catch (error) {
-		res.status(500).send({
-			status: 'error',
-			message: 'Exception thrown in database when creating a new example.',
-		});
-		throw error;
-	}
-}
-
-/**
- * Update a specific resource
- *
- * PUT /:exampleId
- */
-const update = async (req, res) => {
-	const exampleId = req.params.exampleId;
-
-	// make sure example exists
-	const example = await new models.Example({ id: exampleId }).fetch({ require: false });
-	if (!example) {
-		debug("Example to update was not found. %o", { id: exampleId });
-		res.status(404).send({
+    // login the user
+    const user = await models.User.login(email, password);
+    if (!user) {
+		return res.status(401).send({
 			status: 'fail',
-			data: 'Example Not Found',
+			data: 'Authorization failed',
 		});
-		return;
 	}
 
-	// check for any validation errors
-	const errors = validationResult(req);
-	if (!errors.isEmpty()) {
-		return res.status(422).send({ status: 'fail', data: errors.array() });
-	}
+	// make jwt payload
+	const payload = {
+		sub: user.get('email'),
+		user_id: user.get('id'),
+		name: user.get('first_name') + ' ' + user.get('last_name'),
+	};
 
-	// get only the validated data from the request
-	const validData = matchedData(req);
+	// sign payload and get access token
+	const access_token = jwt.sign(payload, process.env.ACCESS_TOKEN_SECRET, {
+		expiresIn: process.env.ACCESS_TOKEN_LIFETIME || '1h',
+	});
 
-	try {
-		const updatedExample = await example.save(validData);
-		debug("Updated example successfully: %O", updatedExample);
-
-		res.send({
-			status: 'success',
-			data: example,
-		});
-
-	} catch (error) {
-		res.status(500).send({
-			status: 'error',
-			message: 'Exception thrown in database when updating a new example.',
-		});
-		throw error;
-	}
-}
+	// sign the payload and refresh token
+	const refresh_token = jwt.sign(payload, process.env.REFRESH_TOKEN_SECRET, {
+		expiresIn: process.env.REFRESH_TOKEN_LIFETIME || '1w',
+	});
+	
+	//respond with the access token
+	return res.send({
+		status: 'success',
+		data: {
+			access_token,
+			refresh_token,
+		},
+	});
+};
 
 /**
- * Destroy a specific resource
- *
- * DELETE /:exampleId
- */
-const destroy = (req, res) => {
-	res.status(400).send({
-		status: 'fail',
-		message: 'You need to write the code for deleting this resource yourself.',
-	});
-}
+ * Validate refresh token and issue a new access token
+*/
+const refresh = (req, res) => {
+	try {
+		// verify token using the refresh token secret
+		const payload = jwt.verify(req.body.token,process.env.REFRESH_TOKEN_SECRET);
+		
+		// remove iat nad exp from refresh token payload
+		delete payload.iat;
+		delete payload.exp;
 
+		// sign payload and get access-token
+		const access_token = jwt.sign(payload, process.env.ACCESS_TOKEN_SECRET, {
+			expiresIn: process.env.ACCESS_TOKEN_LIFETIME || '1h',
+		});
+
+		// send the access token to the client
+		return res.send({
+			status: 'success',
+			data: {
+				access_token,
+			},
+		});
+	} catch (error) {
+		return res.status(401).send({
+			status: 'fail',
+			data: 'invalid token',
+		});
+	}
+};
+
+
+ /**
+  * Register a new user
+  */
+ const register = async (req, res) => {
+	 // check for validation errors
+	 const errors = validationResult(req);
+	 if (!errors.isEmpty()) {
+		 return res.status(422).send({ status: 'fail', data: errors.array() });
+	 }
+
+	 // only the validated data from request
+	 const validData = matchedData(req);
+
+	 // generate a hash of validData.password
+	 try {
+		 validData.password = await bcrypt.hash(validData.password, 10);
+
+	 } catch {
+		 res.status(500).send({
+			 status: 'error',
+			 message: 'Exception thrown in database when hashing the password.',
+		 });
+		 throw error;
+	 }
+
+	 try {
+		 const user = await new models.User(validData).save();
+		 debug('Created new user successfully: %O', user);
+
+		 res.send({
+			 status: 'success',
+			 data: {
+				 email: validData.email,
+				 first_name: validData.first_name,
+				 last_name: validData.last_name,
+			 },
+		 });
+
+	 } catch (error) {
+		 res.status(500).send({
+			 status: 'error',
+			 message: 'Exception thrown in database when creating a new user.',
+		 });
+		 throw error;
+	 }
+ };
+ 
+
+ 
 module.exports = {
-	index,
-	show,
-	store,
-	update,
-	destroy,
-}
+	 login,
+	 refresh, 
+	 register,
+};
