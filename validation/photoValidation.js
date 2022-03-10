@@ -1,31 +1,18 @@
-/**
- * Example Validation Rules
- */
-
 const { body } = require('express-validator');
-const models = require('../models');
 
-/**
- * Create Example validation rules
- *
- * Required: title
- * Optional: -
- */
-const createRules = [
-	body('title').exists().isLength({ min: 4 }),
+const updateRules = [
+	body('title').optional().isLength({ min: 3 }),
+	body('url').optional().isURL().isLength({ min: 3 }),
+	body('comment').optional().isLength({ min: 3 }),
 ];
 
-/**
- * Update Example validation rules
- *
- * Required: -
- * Optional: title
- */
-const updateRules = [
-	body('title').optional().isLength({ min: 4 }),
+const createRules = [
+	body('title').exists().isLength({ min: 3 }),
+	body('url').exists().isURL().isLength({ min: 3 }),
+	body('comment').optional().isLength({ min: 3 }),
 ];
 
 module.exports = {
-	createRules,
 	updateRules,
-}
+	createRules,
+};

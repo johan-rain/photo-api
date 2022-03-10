@@ -1,31 +1,23 @@
-/**
- * Example Validation Rules
- */
+ const { body } = require('express-validator');
+ const models = require('../models');
+ 
+ const createRules = [body('title').exists().isLength({ min: 3 })];
+ 
+ const updateRules = [body('title').optional().isLength({ min: 3 })];
+ 
+ const addPhotoRules = [
+	 body('photo_id').exists().isInt().bail().custom(async value => {
+		const photo = await new models.Photo({ id: value }).fetch({ require: false, });
+		if (!photo) {
+			return Promise.reject(`Photo with ID ${value} does not exist.`);
+		}
 
-const { body } = require('express-validator');
-const models = require('../models');
-
-/**
- * Create Example validation rules
- *
- * Required: title
- * Optional: -
- */
-const createRules = [
-	body('title').exists().isLength({ min: 4 }),
+		return Promise.resolve();
+	}),
 ];
-
-/**
- * Update Example validation rules
- *
- * Required: -
- * Optional: title
- */
-const updateRules = [
-	body('title').optional().isLength({ min: 4 }),
-];
-
-module.exports = {
-	createRules,
-	updateRules,
-}
+ 
+ module.exports = {
+	 createRules,
+	 updateRules,
+	 addPhotoRules,
+ };

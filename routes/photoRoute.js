@@ -1,21 +1,18 @@
 const express = require('express');
 const router = express.Router();
-const exampleController = require('../controllers/example_controller');
-const exampleValidationRules = require('../validation/example');
+const photoController = require('../controllers/photo_controller');
+const photoValidationRules = require('../validation/photoValidation');
 
-/* Get all resources */
-router.get('/', exampleController.index);
+/* Get all photos */
+router.get('/', photoController.getPhotos);
 
-/* Get a specific resource */
-router.get('/:exampleId', exampleController.show);
+/* Get a single photo */
+router.get('/:photoId', photoController.showPhoto);
 
-/* Store a new resource */
-router.post('/', exampleValidationRules.createRules, exampleController.store);
+/* Add a new photo */
+router.post('/', photoValidationRules.createRules, photoController.newPhoto);
 
-/* Update a specific resource */
-router.put('/:exampleId', exampleValidationRules.updateRules, exampleController.update);
-
-/* Destroy a specific resource */
-router.delete('/:exampleId', exampleController.destroy);
+/* Update a single photo */
+router.put('/:photoId', photoValidationRules.updateRules, photoController.updatePhoto);
 
 module.exports = router;
