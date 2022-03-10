@@ -14,7 +14,7 @@ const createRules = [
 		return Promise.resolve();
 	}),
  
-	body('password').exists().isLength({ min: 4 }),
+	body('password').exists().isLength({ min: 6 }),
 	body('first_name').exists().isLength({ min: 3 }),
 	body('last_name').exists().isLength({ min: 3 }),
 ];
