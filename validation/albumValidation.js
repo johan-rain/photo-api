@@ -1,23 +1,23 @@
- const { body } = require('express-validator');
- const models = require('../models');
- 
- const createRules = [body('title').exists().isLength({ min: 3 })];
- 
- const updateRules = [body('title').optional().isLength({ min: 3 })];
- 
- const addPhotoRules = [
-	 body('photo_id').exists().isInt().bail().custom(async value => {
-		const photo = await new models.Photo({ id: value }).fetch({ require: false, });
-		if (!photo) {
-			return Promise.reject(`Photo with ID ${value} does not exist.`);
-		}
+const { body } = require('express-validator');
+const models = require('../models');
 
-		return Promise.resolve();
-	}),
+const createRules = [body('title').exists().isLength({ min: 3 })];
+
+const updateRules = [body('title').optional().isLength({ min: 3 })];
+
+const newPhotoRules = [
+	body('photo_id').exists().isInt().bail().custom(async value => {
+	   const photo = await new models.Photo({ id: value }).fetch({ require: false, });
+	   if (!photo) {
+		   return Promise.reject(`Photo with ID ${value} does not exist.`);
+	   }
+
+	   return Promise.resolve();
+   }),
 ];
- 
- module.exports = {
-	 createRules,
-	 updateRules,
-	 addPhotoRules,
- };
+
+module.exports = {
+	createRules,
+	updateRules,
+	newPhotoRules,
+};
