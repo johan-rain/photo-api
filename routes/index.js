@@ -9,8 +9,8 @@ router.get('/', (req, res, next) => {
 });
 
 router.use(auth.validateToken);
-router.use('/photos', require('./photoRoute'));
-router.use('/albums', require('./albumRoute'));
+router.use('/photos', auth.validateToken, require('./photoRoute'));
+router.use('/albums', auth.validateToken, require('./albumRoute'));
 
 // login user get JWT token
 router.post('/login', authController.login);
