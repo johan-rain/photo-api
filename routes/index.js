@@ -8,7 +8,6 @@ router.get('/', (req, res, next) => {
 	res.send({ success: true, data: { msg: 'Welcome, you may now use this app' }});
 });
 
-router.use(auth.validateToken);
 router.use('/photos', auth.validateToken, require('./photoRoute'));
 router.use('/albums', auth.validateToken, require('./albumRoute'));
 
